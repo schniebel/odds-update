@@ -19,7 +19,7 @@ spec:
         email: fluxcdbot@users.noreply.github.com
       messageTemplate: 'Update image tag for {{range .Updated.Images}}{{.}}{{end}}'
   update:
-    path: ./analytics/sparkApplication/test
+    path: ./clusters/analytics/test/sparkApplication
     strategy: Setters
 
 ---
@@ -27,7 +27,7 @@ spec:
 apiVersion: image.toolkit.fluxcd.io/v1beta1
 kind: ImageUpdateAutomation
 metadata:
-  name: sparkApp-prod
+  name: silver-curation-prod-prod
   namespace: flux-system
 spec:
   interval: 1m0s
@@ -45,5 +45,57 @@ spec:
         email: fluxcdbot@users.noreply.github.com
       messageTemplate: 'Update image tag for {{range .Updated.Images}}{{.}}{{end}}'
   update:
-    path: ./analytics/sparkApplication/prod
+    path: ./clusters/analytics/prod/sparkApplication
+    strategy: Setters
+
+---
+
+apiVersion: image.toolkit.fluxcd.io/v1beta1
+kind: ImageUpdateAutomation
+metadata:
+  name: odds-compute-test
+  namespace: flux-system
+spec:
+  interval: 1m0s
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  git:
+    checkout:
+      ref:
+        branch: main
+    commit:
+      author:
+        name: fluxcdbot
+        email: fluxcdbot@users.noreply.github.com
+      messageTemplate: 'Update image tag for {{range .Updated.Images}}{{.}}{{end}}'
+  update:
+    path: ./clusters/test/odds-compute-service
+    strategy: Setters
+
+---
+
+apiVersion: image.toolkit.fluxcd.io/v1beta1
+kind: ImageUpdateAutomation
+metadata:
+  name: odds-compute-prod
+  namespace: flux-system
+spec:
+  interval: 1m0s
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  git:
+    checkout:
+      ref:
+        branch: main
+    commit:
+      author:
+        name: fluxcdbot
+        email: fluxcdbot@users.noreply.github.com
+      messageTemplate: 'Update image tag for {{range .Updated.Images}}{{.}}{{end}}'
+  update:
+    path: ./clusters/prod/odds-compute
     strategy: Setters
