@@ -56,3 +56,7 @@ We then expose the Silver layer to BigQuery BigLake, enabling analysts and quant
 
 ## Observability
 We run a central [Grafana](https://grafana.com/) in the infra-ops cluster. All clusters (including infra-ops) run [Prometheus](https://prometheus.io/) for metrics and [Loki](https://grafana.com/oss/loki/) for logs. Managed Kafka (Core MSK and Edge MSK) is monitored via CloudWatch, with vendor specific dashboards as needed. Central Grafana wires it all together as datasources.
+
+## Alerting
+There will be a central Alertmanager instance deployed to infra-ops, configured to push alerts defined in prometheus/ Cloudwatch to a #monitoring slack channel, with varying levels of severity (warning, critical, page).
+
