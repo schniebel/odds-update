@@ -46,3 +46,13 @@ This hop enforces schema compatibility and sanitizes any internal-only fields.
 ### Edge Kafka → External Consumers
 External consumers in multiple accounts or clouds subscribe to the odds.updates.public.* topics on Edge Kafka using private networking.
 This allows partners to reliably consume real-time odds updates without touching the private Core.
+
+## Analytics
+All odds updates from Core Kafka (odds.updates.internal.*) are written to S3 using a Kafka Connect S3 Sink, creating a Bronze layer of partitioned Parquet files (organized by league and date). 
+
+A scheduled Spark job (running via the Spark Operator in the analytics cluster) processes the Bronze data into a Silver layer. In this step, records are deduplicated, schemas normalized, and small files compacted into query-efficient Parquet.
+
+We then expose the Silver layer to BigQuery BigLake, enabling analysts and quants to query the data directly in S3 using SQL. 
+
+## Observability
+We run a central [Grafana](https://grafana.com/) in the infra-ops cluster. All clusters (including infra-ops) run [Prometheus](https://prometheus.io/) for metrics and [Loki](https://grafana.com/oss/loki/) for logs. Managed Kafka (Core MSK and Edge MSK) is monitored via CloudWatch, with vendor specific dashboards as needed. Central Grafana wires it all together as datasources.
