@@ -1,0 +1,1 @@
+Note: files in this folder would be generated from running the `flux bootstrap` command in the `bootstrap.sh` script. as an example, they would [look something like this after running.](https://github.com/schniebel/main/tree/main/clusters/main-cluster-1/flux-system)
