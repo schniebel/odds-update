@@ -1,0 +1,29 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: spark-operator
+  namespace: analytics
+spec:
+  interval: 5m
+  targetNamespace: analytics
+  chart:
+    spec:
+      chart: spark-operator
+      version: "1.1.0-0" 
+      sourceRef:
+        kind: HelmRepository
+        name: spark-operator
+        namespace: flux-system
+  install:
+    crds: Create 
+  upgrade:
+    crds: CreateReplace
+  values:
+    sparkJobNamespace: analytics
+    enableWebhook: true
+    rbac:
+      create: true
+    serviceAccounts:
+      spark:
+        create: true
+        name: spark

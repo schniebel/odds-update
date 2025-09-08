@@ -1,0 +1,21 @@
+# Default Spark & pipeline options. CLI args override these.
+paths:
+  bronze_root: "s3://sports-lake/bronze/odds_updates"
+  silver_root: "s3://sports-lake/silver/odds_updates"
+
+bronze:
+  partitioning: ["league", "dt", "hour"]   # expected partition layout in Bronze
+
+silver:
+  partitioning: ["league", "dt"]           # Silver partition layout
+  coalesce_files: 0                        # optionally force N output files total (0 = let Spark decide)
+
+spark:
+  spark.sql.adaptive.enabled: "true"
+  spark.sql.shuffle.partitions: "200"
+  spark.sql.files.maxPartitionBytes: "134217728"     # 128 MB
+  spark.sql.parquet.compression.codec: "zstd"
+  spark.hadoop.fs.s3a.connection.maximum: "200"
+  spark.hadoop.fs.s3a.threads.max: "200"
+  # credentials via IRSA
+  spark.hadoop.fs.s3a.aws.credentials.provider: "com.amazonaws.auth.WebIdentityTokenCredentialsProvider"

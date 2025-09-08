@@ -1,11 +1,11 @@
 apiVersion: image.toolkit.fluxcd.io/v1beta2
 kind: ImagePolicy
 metadata:
-  name: sparkApp-test
+  name: silver-curation-test
   namespace: flux-system
 spec:
   imageRepositoryRef:
-    name: sparkApp
+    name: silver-curation
   policy:
     numerical:
       order: asc
@@ -17,7 +17,7 @@ spec:
 apiVersion: image.toolkit.fluxcd.io/v1beta2
 kind: ImagePolicy
 metadata:
-  name: sparkApp-prod
+  name: silver-curation-prod
   namespace: flux-system
 spec:
   imageRepositoryRef:

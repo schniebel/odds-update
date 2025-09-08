@@ -1,7 +1,7 @@
 apiVersion: image.toolkit.fluxcd.io/v1beta1
 kind: ImageUpdateAutomation
 metadata:
-  name: sparkApp-test
+  name: silver-curation-test
   namespace: flux-system
 spec:
   interval: 1m0s
@@ -19,7 +19,7 @@ spec:
         email: fluxcdbot@users.noreply.github.com
       messageTemplate: 'Update image tag for {{range .Updated.Images}}{{.}}{{end}}'
   update:
-    path: ./analytics/sparkApp/test/sparkApp
+    path: ./analytics/sparkApplication/test
     strategy: Setters
 
 ---
@@ -45,5 +45,5 @@ spec:
         email: fluxcdbot@users.noreply.github.com
       messageTemplate: 'Update image tag for {{range .Updated.Images}}{{.}}{{end}}'
   update:
-    path: ./analytics/sparkApp/prod/sparkApp
+    path: ./analytics/sparkApplication/prod
     strategy: Setters

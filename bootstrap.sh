@@ -35,3 +35,10 @@ aws eks update-kubeconfig --name "$CLUSTER_NAME" --region "$REGION" ${AWS_PROFIL
 log "Verifying cluster access..."
 kubectl cluster-info
 kubectl get nodes -o wide
+
+flux bootstrap github \
+    --owner="$GITHUB_OWNER" \
+    --repository="$GITHUB_REPO" \
+    --path="$FLUX_PATH" \
+    --components-extra=image-reflector-controller,image-automation-controller
+check_error "Flux bootstrap failed."
