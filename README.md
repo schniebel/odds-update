@@ -16,9 +16,10 @@ Once bootstrap is complete, and `flux` is deployed onto `infra-ops`, it will cre
 
 Any cloud resources (kafka clusters, eks clusters, VPCs, redis, postgress instances) are deployed via crossplane. The configuration of which is in the crossplane folder. 
 
-## Odds Update Flow
+## Odds Update Flow -  Kafka Integration Path
 
-<img width="3840" height="813" alt="odds-update-flow _ Mermaid Chart-2025-09-08-162531" src="https://github.com/user-attachments/assets/38569eeb-48bf-4c9c-ae52-065dc4504c57" />
+<img width="3840" height="796" alt="odds-update-flow _ Mermaid Chart-2025-09-08-201059" src="https://github.com/user-attachments/assets/6cc1117a-3d73-474c-9fd4-506bb1ae73e4" />
+
 
 ### Vendor Kafka → Core Kafka (via PrivateLink + MSK Connect)
 The third-party sports data provider hosts their own Kafka cluster in a separate AWS account.
