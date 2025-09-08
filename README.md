@@ -54,6 +54,8 @@ A scheduled Spark job (running via the Spark Operator in the analytics cluster) 
 
 We then expose the Silver layer to BigQuery BigLake, enabling analysts and quants to query the data directly in S3 using SQL. 
 
+see [analytics](https://github.com/schniebel/odds-update/tree/main/analytics) folder for more info and pyspark source code.
+
 ## Observability
 We run a central [Grafana](https://grafana.com/) in the `infra-ops` cluster. All clusters (including `infra-ops`) run [Prometheus](https://prometheus.io/) for metrics and [Loki](https://grafana.com/oss/loki/) for logs. Managed Kafka (Core MSK and Edge MSK) is monitored via CloudWatch, with vendor specific dashboards as needed. Central Grafana wires it all together as datasources.
 
@@ -65,7 +67,7 @@ As mentioned above, deploying cloud resources is done by defining the resources 
 
 For the application layer, images are built via AWS Cloud Build. Build steps are defined in `cloudspec.yaml` file (example for analytics python image). Each `cloudspec.yaml` has steps for testing, building, tagging, and ultimately pushing to ECR.
 
-Once the tagged image makes to to ECR, flux will pull in the latest images based on [imageUpdateAutomation resources defined in this repo.](https://github.com/schniebel/odds-update/tree/init/infra-ops/image-automation), which are polling the ECR repo, looking for newer tagged images. If a newer image is detected, a commit is automatically made to the relevent `helmrelease` resource that deploys the `sparkApplication`, deploying the new image.
+Once the tagged image makes to to ECR, flux will pull in the latest images based on [imageUpdateAutomation resources defined in this repo.](https://github.com/schniebel/odds-update/tree/main/infra-ops/image-automation), which are polling the ECR repo, looking for newer tagged images. If a newer image is detected, a commit is automatically made to the relevent `helmrelease` resource that deploys the `sparkApplication`, deploying the new image.
 
 ### Tagging strategy
 If an images is meant to be deployed to test, it will be tagged with a unix timestamp. if prod, a semver tag is used. Having this different tagging strategy allows us to have test and prod images pushed to the same ECR repo, because flux is configured to only care about one of those tagging strategies depending on if its for test or prod.
