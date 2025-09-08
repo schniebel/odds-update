@@ -5,6 +5,7 @@ set -euo pipefail
 AWS_PROFILE="bootstrap"
 REGION="us-east-1"         
 CLUSTER_NAME="infra-ops" 
+FLUX_PATH="cluster/infra-ops"
 
 terraform apply
 
