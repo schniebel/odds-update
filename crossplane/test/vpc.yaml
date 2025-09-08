@@ -1,0 +1,277 @@
+apiVersion: ec2.aws.crossplane.io/v1beta1
+kind: VPC
+metadata:
+  name: odds-update-vpc-test
+spec:
+  forProvider:
+    cidrBlock: 10.20.0.0/16
+    enableDnsSupport: true
+    enableDnsHostNames: true
+    tags:
+      - key: Name
+        value: odds-update-vpc
+  providerConfigRef:
+    name: aws-default
+
+---
+
+apiVersion: ec2.aws.crossplane.io/v1beta1
+kind: InternetGateway
+metadata:
+  name: odds-update-igw-test
+spec:
+  forProvider:
+    vpcIdRef:
+      name: odds-update-vpc-test
+    tags:
+      - key: Name
+        value: odds-update-igw-test
+  providerConfigRef:
+    name: aws-default
+
+---
+
+apiVersion: ec2.aws.crossplane.io/v1beta1
+kind: Subnet
+metadata:
+  name: odds-update-public-a-test
+spec:
+  forProvider:
+    vpcIdRef:
+      name: odds-update-vpc-test
+    cidrBlock: 10.20.0.0/20
+    availabilityZone: us-east-1a
+    mapPublicIPOnLaunch: true
+    tags:
+      - key: Name
+        value: odds-update-public-a-test
+      - key: kubernetes.io/role/elb
+        value: "1"
+  providerConfigRef:
+    name: aws-default
+
+---
+
+apiVersion: ec2.aws.crossplane.io/v1beta1
+kind: Subnet
+metadata:
+  name: odds-update-public-b-test
+spec:
+  forProvider:
+    vpcIdRef:
+      name: odds-update-vpc-test
+    cidrBlock: 10.20.16.0/20
+    availabilityZone: us-east-1b
+    mapPublicIPOnLaunch: true
+    tags:
+      - key: Name
+        value: odds-update-public-b-test
+      - key: kubernetes.io/role/elb
+        value: "1"
+  providerConfigRef:
+    name: aws-default
+
+---
+
+apiVersion: ec2.aws.crossplane.io/v1beta1
+kind: Subnet
+metadata:
+  name: odds-update-public-c-test
+spec:
+  forProvider:
+    vpcIdRef:
+      name: odds-update-vpc-test
+    cidrBlock: 10.20.32.0/20
+    availabilityZone: us-east-1c
+    mapPublicIPOnLaunch: true
+    tags:
+      - key: Name
+        value: odds-update-public-c-test
+      - key: kubernetes.io/role/elb
+        value: "1"
+  providerConfigRef:
+    name: aws-default
+
+---
+
+apiVersion: ec2.aws.crossplane.io/v1beta1
+kind: Subnet
+metadata:
+  name: odds-update-private-a-test
+spec:
+  forProvider:
+    vpcIdRef:
+      name: odds-update-vpc-test
+    cidrBlock: 10.20.128.0/20
+    availabilityZone: us-east-1a
+    mapPublicIPOnLaunch: false
+    tags:
+      - key: Name
+        value: odds-update-private-a-test
+      - key: kubernetes.io/role/internal-elb
+        value: "1"
+  providerConfigRef:
+    name: aws-default
+
+---
+apiVersion: ec2.aws.crossplane.io/v1beta1
+kind: Subnet
+metadata:
+  name: odds-update-private-b-test
+spec:
+  forProvider:
+    vpcIdRef:
+      name: odds-update-vpc-test
+    cidrBlock: 10.20.144.0/20
+    availabilityZone: us-east-1b
+    mapPublicIPOnLaunch: false
+    tags:
+      - key: Name
+        value: odds-update-private-b-test
+      - key: kubernetes.io/role/internal-elb
+        value: "1"
+  providerConfigRef:
+    name: aws-default
+
+---
+
+apiVersion: ec2.aws.crossplane.io/v1beta1
+kind: Subnet
+metadata:
+  name: odds-update-private-c-test
+spec:
+  forProvider:
+    vpcIdRef:
+      name: odds-update-vpc-test
+    cidrBlock: 10.20.160.0/20
+    availabilityZone: us-east-1c
+    mapPublicIPOnLaunch: false
+    tags:
+      - key: Name
+        value: odds-update-private-c-test
+      - key: kubernetes.io/role/internal-elb
+        value: "1"
+  providerConfigRef:
+    name: aws-default
+
+---
+
+apiVersion: ec2.aws.crossplane.io/v1beta1
+kind: RouteTable
+metadata:
+  name: odds-update-public-rt-test
+spec:
+  forProvider:
+    vpcIdRef:
+      name: odds-update-vpc-test
+    tags:
+      - key: Name
+        value: odds-update-public-rt-test
+  providerConfigRef:
+    name: aws-default
+
+---
+
+apiVersion: ec2.aws.crossplane.io/v1beta1
+kind: Route
+metadata:
+  name: odds-update-public-default-route-test
+spec:
+  forProvider:
+    routeTableIdRef:
+      name: odds-update-public-rt-test
+    destinationCidrBlock: 0.0.0.0/0
+    gatewayIdRef:
+      name: odds-update-igw-test
+  providerConfigRef:
+    name: aws-default
+
+---
+
+apiVersion: ec2.aws.crossplane.io/v1beta1
+kind: SubnetRouteTableAssociation
+metadata:
+  name: odds-update-public-a-assoc-test
+spec:
+  forProvider:
+    subnetIdRef:
+      name: odds-update-public-a-test
+    routeTableIdRef:
+      name: odds-update-public-rt-test
+  providerConfigRef:
+    name: aws-default
+
+---
+
+apiVersion: ec2.aws.crossplane.io/v1beta1
+kind: SubnetRouteTableAssociation
+metadata:
+  name: odds-update-public-b-assoc-test
+spec:
+  forProvider:
+    subnetIdRef:
+      name: odds-update-public-b-test
+    routeTableIdRef:
+      name: odds-update-public-rt-test
+  providerConfigRef:
+    name: aws-default
+
+---
+apiVersion: ec2.aws.crossplane.io/v1beta1
+kind: SubnetRouteTableAssociation
+metadata:
+  name: odds-update-public-c-assoc-test
+spec:
+  forProvider:
+    subnetIdRef:
+      name: odds-update-public-c-test
+    routeTableIdRef:
+      name: odds-update-public-rt-test
+  providerConfigRef:
+    name: aws-default
+
+---
+# -------------------------
+# EIPs for NAT Gateways (1 per AZ)
+# -------------------------
+apiVersion: ec2.aws.crossplane.io/v1alpha1
+kind: Address
+metadata:
+  name: odds-update-nat-eip-a
+spec:
+  forProvider:
+    domain: vpc
+    tags:
+      - key: Name
+        value: odds-update-nat-eip-a
+  providerConfigRef:
+    name: aws-default
+
+---
+apiVersion: ec2.aws.crossplane.io/v1alpha1
+kind: Address
+metadata:
+  name: odds-update-nat-eip-b
+spec:
+  forProvider:
+    domain: vpc
+    tags:
+      - key: Name
+        value: odds-update-nat-eip-b
+  providerConfigRef:
+    name: aws-default
+
+---
+apiVersion: ec2.aws.crossplane.io/v1alpha1
+kind: Address
+metadata:
+  name: odds-update-nat-eip-c
+spec:
+  forProvider:
+    domain: vpc
+    tags:
+      - key: Name
+        value: odds-update-nat-eip-c
+  providerConfigRef:
+    name: aws-default
+

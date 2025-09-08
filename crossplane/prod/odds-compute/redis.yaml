@@ -1,0 +1,47 @@
+# Subnet group (private subnets)
+apiVersion: elasticache.aws.upbound.io/v1beta1
+kind: SubnetGroup
+metadata:
+  name: odds-redis-subnets
+spec:
+  forProvider:
+    region: us-east-1
+    description: Private subnets for odds Redis
+    subnetIdsRefs:
+      - name: odds-update-private-a
+      - name: odds-update-private-b
+      - name: odds-update-private-c
+  providerConfigRef:
+    name: aws-default
+
+---
+
+# Replication group (cluster mode disabled, Multi-AZ)
+apiVersion: elasticache.aws.upbound.io/v1beta1
+kind: ReplicationGroup
+metadata:
+  name: odds-redis
+spec:
+  forProvider:
+    region: us-east-1
+    replicationGroupDescription: Odds compute cache
+    engine: redis
+    engineVersion: "7.0"
+    automaticFailoverEnabled: true
+    multiAzEnabled: true
+    numNodeGroups: 1
+    replicasPerNodeGroup: 1          # 1 primary + 1 replica (2 nodes total)
+    nodeType: cache.r6g.large
+    atRestEncryptionEnabled: true
+    transitEncryptionEnabled: true
+    cacheSubnetGroupNameRef:
+      name: odds-redis-subnets
+    securityGroupIdRefs:
+      - name: odds-redis-sg
+    parameterGroupNameRef:
+      name: odds-redis-params
+  writeConnectionSecretToRef:
+    name: odds-redis-conn
+    namespace: crossplane-system
+  providerConfigRef:
+    name: aws-default

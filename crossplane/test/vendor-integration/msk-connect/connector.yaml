@@ -1,0 +1,63 @@
+
+apiVersion: kafkaconnect.aws.crossplane.io/v1alpha1
+kind: Connector
+metadata:
+  name: vendor-to-core-mirror-test
+spec:
+  forProvider:
+    connectorName: vendor-to-core-mirror-test
+    serviceExecutionRoleArnRef:
+      name: msk-connect-role-test
+    capacity:
+      provisionedCapacity:
+        mcuCount: 1
+        workerCount: 2
+    kafkaCluster:
+      apacheKafkaCluster:
+        bootstrapServers: b-1.core-msk.<<<your-domain>>>:9094,b-2.core-msk.<<<your-domain>>>:9094
+        vpc:
+          subnets:
+            - fromFieldPath: metadata.name=odds-update-private-a-test
+            - fromFieldPath: metadata.name=odds-update-private-b-test
+            - fromFieldPath: metadata.name=odds-update-private-c-test
+          securityGroups:
+            - fromFieldPath: metadata.name=pl-vendor-kafka-endpoint-sg-test
+    connectorConfiguration:
+      "name": "vendor-to-core-mirror"
+      "connector.class": "org.apache.kafka.connect.mirror.MirrorSourceConnector"
+
+      # --- Source (vendor) over PrivateLink (uses VPCE DNS/private DNS) ---
+      "consumer.bootstrap.servers": "b-1.vendor-msk.<<<priv-dns>>>:9094,b-2.vendor-msk.<<<priv-dns>>>:9094"
+      "consumer.security.protocol": "SASL_SSL"
+      "consumer.sasl.mechanism": "SCRAM-SHA-512"
+      "consumer.sasl.jaas.config": "org.apache.kafka.common.security.scram.ScramLoginModule required username=\"replicator_vendor_x\" password=\"${secretsmanager:vendor-replicator-scram}\";"
+
+      # --- Destination (Core MSK) ---
+      "bootstrap.servers": "b-1.core-msk.<<<your-domain>>>:9094,b-2.core-msk.<<<your-domain>>>:9094"
+      "security.protocol": "SASL_SSL"
+      "sasl.mechanism": "IAM"  # or SCRAM if you prefer; if IAM, ensure cluster supports it and role has permissions
+
+      # --- Topics & renaming ---
+      "topics": "vendor.raw.events.*"
+      "replication.policy.class": "org.apache.kafka.connect.mirror.DefaultReplicationPolicy"
+      "replication.policy.separator": ""
+      "refresh.topics.interval.seconds": "60"
+      "tasks.max": "8"
+
+      # --- SMTs: set key to game_id, add headers ---
+      "transforms": "ToKey,AddHdrs"
+      "transforms.ToKey.type": "org.apache.kafka.connect.transforms.ValueToKey"
+      "transforms.ToKey.fields": "game_id"
+      "transforms.AddHdrs.type": "org.apache.kafka.connect.transforms.HeaderFrom$Value"
+      "transforms.AddHdrs.headers": "league,event_id,model_version"
+      "transforms.AddHdrs.missing.behavior": "IGNORE"
+
+      # --- Errors → DLQ (Core) ---
+      "errors.tolerance": "all"
+      "errors.deadletterqueue.topic.name": "raw.events.dlq"
+      "errors.deadletterqueue.context.headers.enable": "true"
+      "errors.log.enable": "true"
+      "errors.retry.timeout": "60000"
+      "errors.retry.delay.max.ms": "1000"
+  providerConfigRef:
+    name: aws-default
