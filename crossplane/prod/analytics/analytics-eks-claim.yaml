@@ -1,0 +1,38 @@
+apiVersion: platform.example.org/v1alpha1
+kind: ClusterPipelineClaim
+metadata:
+  name: analytics-eks-prod
+  namespace: crossplane-system
+spec:
+  parameters:
+    region: us-east-1
+    clusterName: analytics-eks
+    version: "1.31"
+    subnetIds: ["subnet-abc123","subnet-def456"]
+    controlPlaneRoleArn: arn:aws:iam::123456789012:role/EKSControlPlaneRole
+    nodeRoleArn: arn:aws:iam::123456789012:role/EKSNodeRole
+    desiredSize: 3
+    minSize: 3
+    maxSize: 6
+    instanceTypes: ["m6i.xlarge"]
+    script: |
+      echo "Creating cluster connection credentials..."
+
+      aws eks update-kubeconfig \
+        --name analytics-eks \
+        --region $AWS_REGION \
+        --profile $AWS_PROFILE
+
+      SECRET_NAME="analytics-eks-test-kubeconfig"
+
+      kubectl apply -n flux-system -f - <<EOF
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: $SECRET_NAME
+        namespace: flux-system
+      type: Opaque
+      stringData:
+        value: |-
+      $(printf '%s\n' "$KUBECONFIG_CONTENT" | sed 's/^/    /')
+      EOF

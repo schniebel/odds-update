@@ -1,0 +1,20 @@
+{
+  "type": "record",
+  "name": "OddsUpdate",
+  "namespace": "com.example.odds",
+  "fields": [
+    { "name": "event_uid",       "type": "string" },
+    { "name": "event_ts",        "type": { "type": "long", "logicalType": "timestamp-millis" } },
+    { "name": "ingest_ts",       "type": [ "null", { "type": "long", "logicalType": "timestamp-millis" } ], "default": null },
+    { "name": "league",          "type": "string" },
+    { "name": "game_id",         "type": "string" },
+    { "name": "team_id",         "type": [ "null", "string" ], "default": null },
+    { "name": "player_id",       "type": [ "null", "string" ], "default": null },
+    { "name": "market",          "type": "string" },
+    { "name": "odds",            "type": "double" },
+    { "name": "model_version",   "type": [ "null", "string" ], "default": null },
+    { "name": "source_topic",    "type": [ "null", "string" ], "default": null },
+    { "name": "source_partition","type": [ "null", "int" ],    "default": null },
+    { "name": "source_offset",   "type": [ "null", "long" ],   "default": null }
+  ]
+}

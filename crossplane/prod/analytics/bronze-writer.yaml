@@ -1,0 +1,51 @@
+apiVersion: kafkaconnect.aws.upbound.io/v1beta1
+kind: CustomPlugin
+metadata: { name: s3-sink-plugin-prod }
+spec:
+  forProvider:
+    region: us-east-1
+    contentType: ZIP
+    location:
+      s3Location:
+        bucketArn: arn:aws:s3:::sports-lake-bronze-prod
+        fileKey: connectors/kafka-connect-s3-sink.zip
+  providerConfigRef: { name: aws-default }
+
+---
+
+apiVersion: kafkaconnect.aws.upbound.io/v1beta1
+kind: Connector
+metadata: { name: bronze-s3-sink-prod }
+spec:
+  forProvider:
+    region: us-east-1
+    capacity:
+      provisionedCapacity:
+        mcuCount: 1
+        workerCount: 2
+    connectorConfiguration:
+      "connector.class": "io.confluent.connect.s3.S3SinkConnector"
+      "tasks.max": "2"
+      "topics": "odds.updates.internal.nba,odds.updates.internal.nfl"
+      "s3.bucket.name": "sports-lake-bronze"
+      "s3.part.size": "134217728"            # 128MB parts
+      "format.class": "io.confluent.connect.s3.format.parquet.ParquetFormat"
+      "flush.size": "10000"
+      "rotate.interval.ms": "60000"
+      "partitioner.class": "io.confluent.connect.storage.partitioner.TimeBasedPartitioner"
+      "path.format": "league=${header:league}/dt=YYYY-MM-dd/hour=HH"
+      "timezone": "UTC"
+      "locale": "en"
+      "behavior.on.null.values": "ignore"
+    kafkaCluster:
+      apacheKafkaCluster:
+        bootstrapServers: "<MSK_BROKERS>"
+        vpc:
+          subnets: ["subnet-abc","subnet-def"]
+          securityGroups: ["sg-xyz"]
+    kafkaConnectVersion: "2.7.1"             # example; align to plugin
+    serviceExecutionRoleArnRef:
+      name: msk-connect-s3-writer-prod
+    plugins:
+      - customPluginRef: { name: s3-sink-plugin-prod}
+  providerConfigRef: { name: aws-default }

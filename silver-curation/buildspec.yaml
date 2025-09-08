@@ -1,0 +1,104 @@
+version: 0.2
+
+env:
+  variables:
+    AWS_DEFAULT_REGION: us-east-1
+    APP_NAME: sparkApp
+    ECR_ACCOUNT_ID: "123456789012"
+    ECR_REPO_APP: "silver-curation"         # your app repo name
+    ECR_REPO_CI: "silver-curation-ci"       # your CI image repo (optional)
+  git-credential-helper: yes
+
+phases:
+  install:
+    runtime-versions:
+      docker: 20
+    commands:
+      - echo "Install phase - ensuring Docker is available"
+      - aws --version
+      - docker version
+
+  pre_build:
+    commands:
+      - echo "Logging into Amazon ECR..."
+      - aws ecr get-login-password --region "$AWS_DEFAULT_REGION" \
+        | docker login --username AWS --password-stdin "${ECR_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com"
+
+      # Ensure repo exists (idempotent)
+      - |
+        aws ecr describe-repositories --repository-names "$ECR_REPO" >/dev/null 2>&1 || \
+        aws ecr create-repository --repository-name "$ECR_REPO" >/dev/null
+
+      # Compute tags for Flux Image Automation to detect
+      - COMMIT_SHA="$(echo "${CODEBUILD_RESOLVED_SOURCE_VERSION}" | cut -c1-7 || true)"
+      - BRANCH_REF="${CODEBUILD_WEBHOOK_HEAD_REF:-}"
+      - |
+        if [ -z "$BRANCH_REF" ]; then
+          # Fallbacks when webhook ref is not present (e.g., CodePipeline)
+          BRANCH_REF="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || true)"
+        fi
+      - BRANCH_REF="${BRANCH_REF#refs/heads/}"
+      - BRANCH_NAME="${BRANCH_REF:-main}"
+      - BRANCH_SAFE="$(echo "$BRANCH_NAME" | tr '/_' '-' | sed 's/[^a-zA-Z0-9.\-]/-/g')"
+      - APP_TAG_SHA="${COMMIT_SHA:-build-$(date +%s)}"
+      - APP_TAG_BRANCH="${BRANCH_SAFE}"
+      - FULL_ECR="${ECR_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${ECR_REPO}"
+
+      # Detect exact git tag (e.g., v1.2.3) if the commit is tagged
+      - GIT_TAG="$(git describe --tags --exact-match 2>/dev/null || true)"
+      - |
+        echo "Resolved tags:"
+        echo "  branch:  $APP_TAG_BRANCH"
+        echo "  sha:     $APP_TAG_SHA"
+        [ -n "$GIT_TAG" ] && echo "  git tag: $GIT_TAG" || echo "  git tag: <none>"
+
+  build:
+    commands:
+      - echo "Running unit tests..."
+      - |
+        if [ -f requirements-dev.txt ]; then
+          pip install -r requirements-dev.txt
+        fi
+      - |
+        if [ -d tests ]; then
+          pytest -q
+        else
+          echo "No tests/ directory found; skipping pytest."
+        fi
+
+      - echo "Building Docker image..."
+      - docker build -t "${APP_NAME}:${APP_TAG_SHA}" .
+
+      - echo "Tagging image for ECR..."
+      - docker tag "${APP_NAME}:${APP_TAG_SHA}" "${FULL_ECR}:${APP_TAG_BRANCH}-${APP_TAG_SHA}"   # <branch>-<sha>  (primary for Flux)
+      - docker tag "${APP_NAME}:${APP_TAG_SHA}" "${FULL_ECR}:${APP_TAG_BRANCH}"                  # moving branch tag (e.g., 'main')
+      - docker tag "${APP_NAME}:${APP_TAG_SHA}" "${FULL_ECR}:${APP_TAG_SHA}"                     # raw short sha
+      - docker tag "${APP_NAME}:${APP_TAG_SHA}" "${FULL_ECR}:latest"                             # convenience
+      - |
+        if [ -n "$GIT_TAG" ]; then
+          docker tag "${APP_NAME}:${APP_TAG_SHA}" "${FULL_ECR}:${GIT_TAG}"                       # semver tag if exists
+        fi
+
+  post_build:
+    commands:
+      - echo "Pushing tags to ECR..."
+      - docker push "${FULL_ECR}:${APP_TAG_BRANCH}-${APP_TAG_SHA}"
+      - docker push "${FULL_ECR}:${APP_TAG_BRANCH}"
+      - docker push "${FULL_ECR}:${APP_TAG_SHA}"
+      - docker push "${FULL_ECR}:latest"
+      - |
+        if [ -n "$GIT_TAG" ]; then
+          docker push "${FULL_ECR}:${GIT_TAG}"
+        fi
+      - |
+        echo "Image push complete. Published tags:"
+        echo " - ${FULL_ECR}:${APP_TAG_BRANCH}-${APP_TAG_SHA}"
+        echo " - ${FULL_ECR}:${APP_TAG_BRANCH}"
+        echo " - ${FULL_ECR}:${APP_TAG_SHA}"
+        echo " - ${FULL_ECR}:latest"
+        [ -n "$GIT_TAG" ] && echo " - ${FULL_ECR}:${GIT_TAG}"
+
+artifacts:
+  files:
+    - README.md
+  discard-paths: yes

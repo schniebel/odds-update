@@ -1,0 +1,36 @@
+apiVersion: kafka.aws.upbound.io/v1beta2
+kind: Cluster
+metadata:
+  name: core-test
+spec:
+  forProvider:
+    region: us-east-1
+    kafkaVersion: "3.6.0" 
+    numberOfBrokerNodes: 3
+    brokerNodeGroupInfo:
+      clientSubnetsRefs: 
+        - name: odds-update-private-a
+        - name: odds-update-private-b
+        - name: odds-update-private-c
+      instanceType: kafka.m5.large
+      storageInfo:
+        ebsStorageInfo:
+          volumeSize: 100
+      connectivityInfo: {}
+      securityGroups: [] 
+    encryptionInfo:
+      encryptionInTransit:
+        clientBroker: TLS
+        inCluster: true
+    clientAuthentication:
+      sasl:
+        scram: true     
+      tls:             
+        enabled: true
+    loggingInfo:
+      brokerLogs:
+        cloudwatchLogs:
+          enabled: true
+          logGroup: /msk/core
+  providerConfigRef:
+    name: aws-default

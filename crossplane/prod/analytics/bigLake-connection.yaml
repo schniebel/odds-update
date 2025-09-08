@@ -1,0 +1,11 @@
+# BigLake connection (Cloud resource connection) used by BigQuery to access S3
+apiVersion: bigqueryconnection.gcp.upbound.io/v1beta1
+kind: Connection
+metadata: { name: biglake-aws-conn-prod }
+spec:
+  forProvider:
+    location: US
+    aws:
+      accessRole:
+        iamRoleId: arn:aws:iam::<ACCOUNT_ID>:role/BigLakeAccessRole
+  providerConfigRef: { name: gcp-default }

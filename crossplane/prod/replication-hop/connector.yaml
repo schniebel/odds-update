@@ -1,0 +1,67 @@
+apiVersion: kafkaconnect.aws.crossplane.io/v1alpha1
+kind: Connector
+metadata:
+  name: core-to-edge-mirror-prod
+spec:
+  forProvider:
+    connectorName: core-to-edge-mirror-prod
+    serviceExecutionRoleArnRef:
+      name: msk-connect-core-edge-role-prod
+    capacity:
+      provisionedCapacity:
+        mcuCount: 1
+        workerCount: 2
+    kafkaCluster:
+      apacheKafkaCluster:
+        # Connect workers’ ENIs live in your private subnets with reachability to both clusters
+        bootstrapServers: b-1.edge-msk.<<your-domain>>:9094,b-2.edge-msk.<<your-domain>>:9094
+        vpc:
+          subnets:
+            - fromFieldPath: metadata.name=odds-update-private-a
+            - fromFieldPath: metadata.name=odds-update-private-b
+            - fromFieldPath: metadata.name=odds-update-private-c
+          securityGroups:
+            - fromFieldPath: metadata.name=clients-sg
+    connectorConfiguration:
+      "name": "core-to-edge"
+      "connector.class": "org.apache.kafka.connect.mirror.MirrorSourceConnector"
+
+      # --- Source (Core) ---
+      "consumer.bootstrap.servers": "b-1.core-msk.<<your-domain>>:9094,b-2.core-msk.<<your-domain>>:9094"
+      "consumer.security.protocol": "SASL_SSL"
+      "consumer.sasl.mechanism": "SCRAM-SHA-512"
+      "consumer.sasl.jaas.config": "org.apache.kafka.common.security.scram.ScramLoginModule required username=\"replicator_core\" password=\"${secretsmanager:core-replicator-scram}\";"
+
+      # --- Destination (Edge) ---
+      "bootstrap.servers": "b-1.edge-msk.<<your-domain>>:9094,b-2.edge-msk.<<your-domain>>:9094"
+      "security.protocol": "SASL_SSL"
+      "sasl.mechanism": "SCRAM-SHA-512"
+      "sasl.jaas.config": "org.apache.kafka.common.security.scram.ScramLoginModule required username=\"replicator_core_to_edge\" password=\"${secretsmanager:edge-replicator-scram}\";"
+
+      # --- What to replicate ---
+      "topics": "odds.updates.internal.*"
+      "tasks.max": "8"
+      "refresh.topics.interval.seconds": "60"
+      "replication.policy.class": "org.apache.kafka.connect.mirror.DefaultReplicationPolicy"
+      "replication.policy.separator": ""
+
+      # --- Rename internal -> public ---
+      "transforms": "ToPublic,StripInternal"
+      "transforms.ToPublic.type": "org.apache.kafka.connect.transforms.RegexRouter"
+      "transforms.ToPublic.regex": "^odds\\.updates\\.internal\\.(.*)$"
+      "transforms.ToPublic.replacement": "odds.updates.public.$1"
+
+      # --- Optional: remove internal-only fields before they leave Core ---
+      # Adjust field list to your payload schema
+      "transforms.StripInternal.type": "org.apache.kafka.connect.transforms.ReplaceField$Value"
+      "transforms.StripInternal.blacklist": "internal_notes,debug_fields,pii_temp"
+
+      # --- Errors → Edge DLQ ---
+      "errors.tolerance": "all"
+      "errors.deadletterqueue.topic.name": "odds.updates.public.dlq"
+      "errors.deadletterqueue.context.headers.enable": "true"
+      "errors.log.enable": "true"
+      "errors.retry.timeout": "60000"
+      "errors.retry.delay.max.ms": "1000"
+  providerConfigRef:
+    name: aws-default

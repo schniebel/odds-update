@@ -1,0 +1,57 @@
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImagePolicy
+metadata:
+  name: silver-curation-test
+  namespace: flux-system
+spec:
+  imageRepositoryRef:
+    name: silver-curation
+  policy:
+    numerical:
+      order: asc
+  filterTags:
+    pattern: '^\d+$'
+
+---
+
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImagePolicy
+metadata:
+  name: silver-curation-prod
+  namespace: flux-system
+spec:
+  imageRepositoryRef:
+    name: silver-curation
+  policy:
+    semver:
+      range: '>=0.1.0'
+
+---
+
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImagePolicy
+metadata:
+  name: odds-compute-test
+  namespace: flux-system
+spec:
+  imageRepositoryRef:
+    name: odds-compute
+  policy:
+    numerical:
+      order: asc
+  filterTags:
+    pattern: '^\d+$'
+
+---
+
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImagePolicy
+metadata:
+  name: odds-compute-prod
+  namespace: flux-system
+spec:
+  imageRepositoryRef:
+    name: odds-compute
+  policy:
+    semver:
+      range: '>=0.1.0'

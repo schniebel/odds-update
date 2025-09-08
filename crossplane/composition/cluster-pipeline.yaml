@@ -1,0 +1,141 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: clusterpipeline-composition
+spec:
+  compositeTypeRef:
+    apiVersion: platform.example.org/v1alpha1
+    kind: ClusterPipeline
+  mode: Pipeline
+  pipeline:
+    - type: Function
+      name: pnt
+      image: xpkg.upbound.io/crossplane-contrib/function-patch-and-transform:v0.8.0
+      config:
+        apiVersion: pt.fn.crossplane.io/v1beta1
+        kind: Resources
+        resources:
+
+          # 1) EKS Cluster
+          - name: eks-cluster
+            base:
+              apiVersion: eks.aws.upbound.io/v1beta1
+              kind: Cluster
+              spec:
+                forProvider:
+                  region: us-east-1
+                  roleArn: ""                        # patched
+                  version: "1.31"                   # patched
+                  resourcesVpcConfig:
+                    securityGroupIds: []            # optional
+                    subnetIds: []                   # patched
+                providerConfigRef:
+                  name: aws-default
+                writeConnectionSecretToRef:
+                  namespace: crossplane-system
+                  name: from-composition-fill-me
+            patches:
+              - fromFieldPath: "spec.parameters.clusterName"
+                toFieldPath: "metadata.name"
+              - fromFieldPath: "spec.parameters.region"
+                toFieldPath: "spec.forProvider.region"
+              - fromFieldPath: "spec.parameters.version"
+                toFieldPath: "spec.forProvider.version"
+              - fromFieldPath: "spec.parameters.controlPlaneRoleArn"
+                toFieldPath: "spec.forProvider.roleArn"
+              - fromFieldPath: "spec.parameters.subnetIds"
+                toFieldPath: "spec.forProvider.resourcesVpcConfig.subnetIds"
+              - type: ToCompositeFieldPath
+                fromFieldPath: "metadata.name"
+                toFieldPath: "status.clusterName"  # stash for later
+              - type: ToCompositeFieldPath
+                fromFieldPath: "spec.writeConnectionSecretToRef.name"
+                toFieldPath: "status.connSecretName"
+              - type: ToCompositeFieldPath
+                fromFieldPath: "spec.writeConnectionSecretToRef.namespace"
+                toFieldPath: "status.connSecretNS"
+            connectionDetails:
+              - fromConnectionSecretKey: kubeconfig
+
+          # 2) EKS NodeGroup
+          - name: eks-nodegroup
+            base:
+              apiVersion: eks.aws.upbound.io/v1beta1
+              kind: NodeGroup
+              spec:
+                forProvider:
+                  clusterName: ""                     # patched
+                  nodeRoleArn: ""                     # patched
+                  scalingConfig:
+                    desiredSize: 2                    # patched
+                    minSize: 1                        # patched
+                    maxSize: 3                        # patched
+                  instanceTypes: []                   # patched
+                  subnetIds: []                       # patched
+                providerConfigRef:
+                  name: aws-default
+            patches:
+              - fromFieldPath: "status.clusterName"
+                toFieldPath: "spec.forProvider.clusterName"
+                policy:
+                  fromFieldPath: Required
+              - fromFieldPath: "spec.parameters.nodeRoleArn"
+                toFieldPath: "spec.forProvider.nodeRoleArn"
+              - fromFieldPath: "spec.parameters.desiredSize"
+                toFieldPath: "spec.forProvider.scalingConfig.desiredSize"
+              - fromFieldPath: "spec.parameters.minSize"
+                toFieldPath: "spec.forProvider.scalingConfig.minSize"
+              - fromFieldPath: "spec.parameters.maxSize"
+                toFieldPath: "spec.forProvider.scalingConfig.maxSize"
+              - fromFieldPath: "spec.parameters.instanceTypes"
+                toFieldPath: "spec.forProvider.instanceTypes"
+              - fromFieldPath: "spec.parameters.subnetIds"
+                toFieldPath: "spec.forProvider.subnetIds"
+
+          # 3) ProviderConfig for provider-kubernetes (points to the new cluster's kubeconfig)
+          - name: k8s-providerconfig
+            base:
+              apiVersion: kubernetes.crossplane.io/v1alpha1
+              kind: ProviderConfig
+              spec:
+                credentials:
+                  source: Secret
+                  secretRef:
+                    namespace: crossplane-system   # patched
+                    name: ""                       # patched
+                    key: kubeconfig
+            patches:
+              - fromFieldPath: "status.connSecretNS"
+                toFieldPath: "spec.credentials.secretRef.namespace"
+              - fromFieldPath: "status.connSecretName"
+                toFieldPath: "spec.credentials.secretRef.name"
+
+          # 4) Run a Job (your "script") in the new cluster using provider-kubernetes
+          - name: bootstrap-job
+            base:
+              apiVersion: kubernetes.crossplane.io/v1alpha2
+              kind: Object
+              spec:
+                providerConfigRef:
+                  name: k8s-providerconfig        # refers to resource above by name
+                forProvider:
+                  manifest:
+                    apiVersion: batch/v1
+                    kind: Job
+                    metadata:
+                      name: cluster-bootstrap
+                      namespace: default
+                    spec:
+                      backoffLimit: 0
+                      template:
+                        spec:
+                          restartPolicy: Never
+                          containers:
+                            - name: runner
+                              # any tiny image with sh + kubectl (distroless won't do); you can use bitnami/kubectl
+                              image: public.ecr.aws/bitnami/kubectl:latest
+                              command: ["/bin/sh","-c"]
+                              args: ["__SCRIPT__"]   # patched
+            patches:
+              - fromFieldPath: "spec.parameters.script"
+                toFieldPath: "spec.forProvider.manifest.spec.template.spec.containers[0].args[0]"

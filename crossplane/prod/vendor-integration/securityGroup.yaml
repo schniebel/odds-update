@@ -1,0 +1,24 @@
+apiVersion: ec2.aws.crossplane.io/v1beta1
+kind: SecurityGroup
+metadata:
+  name: pl-vendor-kafka-endpoint-sg-prod
+spec:
+  forProvider:
+    vpcIdRef:
+      name: odds-update-vpc                 
+    groupName: pl-vendor-kafka-endpoint-sg
+    description: Allow TLS from producers to PrivateLink endpoint ENIs (Kafka)
+    ingress:
+      - fromPort: 9092          # <- adjust if vendor uses 9094/9096 etc
+        toPort: 9098
+        ipProtocol: tcp
+        # Limit to the SG that your clients (MSK Connect workers / EKS nodes) use
+        userIdGroupPairs:
+          - groupIdRef:
+              name: clients-sg 
+    egress:
+      - fromPort: 0
+        toPort: 0
+        ipProtocol: -1                  # allow all egress
+  providerConfigRef:
+    name: aws-default

@@ -1,0 +1,104 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: odds-compute
+  namespace: apps
+spec:
+  interval: 5m
+  chart:
+    spec:
+      chart: ./charts/odds-compute   # or a registry chart e.g. ghcr.io/you/odds-compute
+      sourceRef:
+        kind: GitRepository
+        name: odds-update-repo
+        namespace: flux-system
+  values:
+    replicaCount: 3
+    image:
+      repository: <your-registry>/odds-compute
+      tag: "v1.0" # {"$imagepolicy": "flux-system:odds-compute-prod:tag"}
+      pullPolicy: IfNotPresent
+    env:
+      - name: KAFKA_BOOTSTRAP
+        valueFrom:
+          secretKeyRef:
+            name: kafka-core-bootstrap
+            key: bootstrap
+      - name: KAFKA_SASL_MECHANISM
+        value: SCRAM-SHA-512
+      - name: KAFKA_USERNAME
+        valueFrom:
+          secretKeyRef:
+            name: kafka-core-bootstrap
+            key: username
+      - name: KAFKA_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: kafka-core-bootstrap
+            key: password
+      - name: PG_HOST
+        valueFrom:
+          secretKeyRef:
+            name: odds-pg-conn-app
+            key: endpoint
+      - name: PG_PORT
+        valueFrom:
+          secretKeyRef:
+            name: odds-pg-conn-app
+            key: port
+      - name: PG_DATABASE
+        valueFrom:
+          secretKeyRef:
+            name: odds-pg-conn-app
+            key: database
+      - name: PG_USER
+        valueFrom:
+          secretKeyRef:
+            name: odds-pg-conn-app
+            key: username
+      - name: PG_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: odds-pg-conn-app
+            key: password
+      - name: REDIS_HOST
+        valueFrom:
+          secretKeyRef:
+            name: odds-redis-conn-app
+            key: primary_endpoint_address
+      - name: REDIS_PORT
+        valueFrom:
+          secretKeyRef:
+            name: odds-redis-conn-app
+            key: port
+      - name: OUTPUT_TOPIC
+        value: odds.updates.internal
+      - name: PRODUCER_ACKS
+        value: all
+      - name: PRODUCER_IDEM_POTENCE
+        value: "true"
+      - name: PRODUCER_LINGER_MS
+        value: "10"
+      - name: PRODUCER_BATCH_SIZE
+        value: "131072"
+      - name: SCHEMA_REGISTRY_MODE
+        value: BACKWARD
+    resources:
+      requests:
+        cpu: 200m
+        memory: 256Mi
+      limits:
+        cpu: 1
+        memory: 1Gi
+    podAnnotations:
+      prometheus.io/scrape: "true"
+      prometheus.io/path: /metrics
+      prometheus.io/port: "8080"
+    service:
+      type: ClusterIP
+      port: 8080
+    autoscaling:
+      enabled: true
+      minReplicas: 3
+      maxReplicas: 12
+      targetCPUUtilizationPercentage: 70

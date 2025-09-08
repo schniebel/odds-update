@@ -1,0 +1,77 @@
+apiVersion: topic.kafka.crossplane.io/v1alpha1
+kind: Topic
+metadata:
+  name: raw-events-dlq-prod
+spec:
+  providerConfigRef:
+    name: core-kafka
+  partitions: 6
+  replicationFactor: 3
+  config:
+    cleanup.policy: "delete"
+    min.insync.replicas: "2"
+    retention.ms: "604800000"          # 7 days
+
+---
+
+apiVersion: topic.kafka.crossplane.io/v1alpha1
+kind: Topic
+metadata:
+  name: odds-updates-public-dlq-prod 
+spec:
+  providerConfigRef:
+    name: core-kafka
+  partitions: 6
+  replicationFactor: 3
+  config:
+    cleanup.policy: "delete"
+    min.insync.replicas: "2"
+    retention.ms: "604800000"
+
+---
+
+apiVersion: topic.kafka.crossplane.io/v1alpha1
+kind: Topic
+metadata:
+  name: odds-updates-internal-nfl
+spec:
+  providerConfigRef:
+    name: core-kafka
+  partitions: 12               # internal, hot stream → more parallelism than DLQ
+  replicationFactor: 3
+  config:
+    min.insync.replicas: "2"
+    cleanup.policy: "delete"
+    retention.ms: "43200000"   # 12h (analytics reads from internal or from S3)
+
+---
+
+apiVersion: topic.kafka.crossplane.io/v1alpha1
+kind: Topic
+metadata:
+  name: odds-updates-internal-nba
+spec:
+  providerConfigRef:
+    name: core-kafka
+  partitions: 12
+  replicationFactor: 3
+  config:
+    min.insync.replicas: "2"
+    cleanup.policy: "delete"
+    retention.ms: "43200000"
+
+---
+
+apiVersion: topic.kafka.crossplane.io/v1alpha1
+kind: Topic
+metadata:
+  name: odds-updates-internal-mlb
+spec:
+  providerConfigRef:
+    name: core-kafka
+  partitions: 12
+  replicationFactor: 3
+  config:
+    min.insync.replicas: "2"
+    cleanup.policy: "delete"
+    retention.ms: "43200000"
