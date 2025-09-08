@@ -1,0 +1,18 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: custom-alerts
+  namespace: kube-prometheus-stack
+  labels:
+    release: kube-prometheus-stack
+spec:
+  groups:
+    # custom rules for prometheus to alert on here.
+    # for example:
+    - name: cadvisor
+      rules:
+      - alert: ContainerMemoryLimitReached
+        annotations:
+          description: Container memory limit reached at least once in the last 5 minutes.
+          summary: Container hit memory cgroup limit
+        expr: rate(container_memory_failcnt{container_name!="",container_name!="prometheus",job="kubernetes-nodes"}[5m]) > 0
