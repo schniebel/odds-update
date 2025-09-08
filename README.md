@@ -81,7 +81,7 @@ There will be a central [Alertmanager](https://prometheus.io/docs/alerting/lates
 ## CI/CD
 As mentioned above, deploying cloud resources is done by defining the resources in yaml, and pointing at those resources via `kind: kustomization`. Flux and Crossplane take care of the provisioning and state management for these resources.
 
-For the application layer, images are built via AWS Cloud Build. Build steps are defined in `cloudspec.yaml` file (example for analytics python image). Each `cloudspec.yaml` has steps for testing, building, tagging, and ultimately pushing to ECR.
+For the application layer, images are built via [AWS Cloud Build](https://docs.aws.amazon.com/codebuild/) Build steps are defined in `cloudspec.yaml` file (example for analytics python image). Each `cloudspec.yaml` has steps for testing, building, tagging, and ultimately pushing to ECR.
 
 Once the tagged image makes to to ECR, flux will pull in the latest images based on [imageUpdateAutomation resources defined in this repo.](https://github.com/schniebel/odds-update/tree/main/infra-ops/image-automation), which are polling the ECR repo, looking for newer tagged images. If a newer image is detected, a commit is automatically made to the relevent `helmrelease` resource that deploys the `sparkApplication`, deploying the new image.
 
