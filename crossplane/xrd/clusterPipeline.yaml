@@ -1,0 +1,64 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: CompositeResourceDefinition
+metadata:
+  name: clusterpipelines.platform.example.org
+spec:
+  group: platform.example.org
+  names:
+    kind: ClusterPipeline
+    plural: clusterpipelines
+  claimNames:
+    kind: ClusterPipelineClaim
+    plural: clusterpipelineclaims
+  defaultCompositionRef:
+    name: clusterpipeline-composition
+  connectionSecretKeys:
+    - kubeconfig
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                parameters:
+                  type: object
+                  properties:
+                    region:
+                      type: string
+                      default: us-east-1
+                    clusterName:
+                      type: string
+                    version:
+                      type: string
+                      default: "1.31"
+                    subnetIds:
+                      type: array
+                      items: { type: string }
+                    controlPlaneRoleArn:
+                      type: string
+                    nodeRoleArn:
+                      type: string
+                    desiredSize:
+                      type: integer
+                      default: 2
+                    minSize:
+                      type: integer
+                      default: 1
+                    maxSize:
+                      type: integer
+                      default: 3
+                    instanceTypes:
+                      type: array
+                      items: { type: string }
+                      default: ["m6i.large"]
+                    # A tiny shell script (commands) to run as a Job in the new cluster
+                    script:
+                      type: string
+                      default: |
+                        echo "Hello from inside the new EKS cluster"; \
+                        kubectl get nodes -o wide

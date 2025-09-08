@@ -1,0 +1,25 @@
+# Dataset + External Table over Silver on S3 (Parquet)
+apiVersion: bigquery.gcp.upbound.io/v1beta1
+kind: Dataset
+metadata: { name: odds_analytics-prod }
+spec:
+  forProvider:
+    location: US
+  providerConfigRef: { name: gcp-default }
+  
+---
+
+apiVersion: bigquery.gcp.upbound.io/v1beta1
+kind: Table
+metadata: { name: odds_silver_ext-prod }
+spec:
+  forProvider:
+    datasetIdRef: { name: odds_analytics-prod }
+    tableId: odds_silver_ext
+    externalDataConfiguration:
+      sourceFormat: PARQUET
+      connectionIdRef: { name: biglake-aws-conn-prod }
+      sourceUris:
+        - "s3://sports-lake-silver-prod/odds_updates/*"
+      autodetect: true
+  providerConfigRef: { name: gcp-default }

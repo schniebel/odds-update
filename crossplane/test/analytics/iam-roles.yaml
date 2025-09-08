@@ -1,0 +1,88 @@
+apiVersion: iam.aws.upbound.io/v1beta1
+kind: Role
+metadata: { name: msk-connect-s3-writer-test}
+spec:
+  forProvider:
+    assumeRolePolicyDocument: |
+      {
+        "Version":"2012-10-17",
+        "Statement":[{"Effect":"Allow","Principal":{"Service":"kafkaconnect.amazonaws.com"},"Action":"sts:AssumeRole"}]
+      }
+  providerConfigRef: { name: aws-default }
+
+---
+
+apiVersion: iam.aws.upbound.io/v1beta1
+kind: Policy
+metadata: { name: msk-connect-s3-writer-policy-test}
+spec:
+  forProvider:
+    policy: |
+      {
+        "Version":"2012-10-17",
+        "Statement":[
+          {"Effect":"Allow","Action":["s3:PutObject","s3:AbortMultipartUpload","s3:ListBucket","s3:GetBucketLocation"],
+           "Resource":[
+             "arn:aws:s3:::sports-lake-bronze",
+             "arn:aws:s3:::sports-lake-bronze/*"
+           ]}
+        ]
+      }
+  providerConfigRef: { name: aws-default }
+
+---
+
+apiVersion: iam.aws.upbound.io/v1beta1
+kind: RolePolicyAttachment
+metadata: { name: msk-connect-s3-writer-attach-test}
+spec:
+  forProvider:
+    roleRef: { name: msk-connect-s3-writer-test }
+    policyArnRef: { name: msk-connect-s3-writer-policy-test}
+  providerConfigRef: { name: aws-default }
+
+---
+
+apiVersion: iam.aws.upbound.io/v1beta1
+kind: Role
+metadata: { name: spark-silver-irsa-test}
+spec:
+  forProvider:
+    assumeRolePolicyDocument: |
+      {
+        "Version":"2012-10-17",
+        "Statement":[{"Effect":"Allow","Principal":{"Federated":"arn:aws:iam::<ACCOUNT_ID>:oidc-provider/<EKS_OIDC_PROVIDER>"},
+          "Action":"sts:AssumeRoleWithWebIdentity",
+          "Condition":{"StringEquals":{"<EKS_OIDC_PROVIDER>:sub":"system:serviceaccount:analytics:spark-silver"}}}]
+      }
+  providerConfigRef: { name: aws-default }
+  
+---
+
+apiVersion: iam.aws.upbound.io/v1beta1
+kind: Policy
+metadata: { name: spark-silver-s3-rw-policy-test }
+spec:
+  forProvider:
+    policy: |
+      {
+        "Version":"2012-10-17",
+        "Statement":[
+          {"Effect":"Allow","Action":["s3:GetObject","s3:ListBucket"], "Resource":[
+            "arn:aws:s3:::sports-lake-bronze","arn:aws:s3:::sports-lake-bronze/*"]},
+          {"Effect":"Allow","Action":["s3:PutObject","s3:AbortMultipartUpload","s3:ListBucket","s3:GetBucketLocation"], "Resource":[
+            "arn:aws:s3:::sports-lake-silver","arn:aws:s3:::sports-lake-silver/*"]}
+        ]
+      }
+  providerConfigRef: { name: aws-default }
+
+---
+
+apiVersion: iam.aws.upbound.io/v1beta1
+kind: RolePolicyAttachment
+metadata: { name: spark-silver-rw-attach-test }
+spec:
+  forProvider:
+    roleRef: { name: spark-silver-irsa-test }
+    policyArnRef: { name: spark-silver-s3-rw-policy-test }
+  providerConfigRef: { name: aws-default }

@@ -1,0 +1,25 @@
+apiVersion: s3.aws.upbound.io/v1beta1
+kind: Bucket
+metadata: { name: sports-lake-bronze-test}
+spec:
+  forProvider:
+    region: us-east-1
+    objectLockEnabledForBucket: false
+  providerConfigRef: { name: aws-default }
+---
+apiVersion: s3.aws.upbound.io/v1beta1
+kind: BucketPolicy
+metadata: { name: sports-lake-bronze-policy-test }
+spec:
+  forProvider:
+    region: us-east-1
+    bucketRef: { name: sports-lake-bronze-test }
+  providerConfigRef: { name: aws-default }
+---
+apiVersion: s3.aws.upbound.io/v1beta1
+kind: Bucket
+metadata: { name: sports-lake-silver-test}
+spec:
+  forProvider:
+    region: us-east-1
+  providerConfigRef: { name: aws-default }
