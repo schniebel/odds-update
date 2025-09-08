@@ -27,8 +27,7 @@ spec:
               - targets:
                   - <alertmanager endpoint url here>
     grafana:
-      enabled: true
-      <additional grafana settings here>
+      enabled: false
     coreDns:
       enabled: false
     defaultRules:

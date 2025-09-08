@@ -10,7 +10,7 @@ spec:
       version: 73.2.0
       sourceRef:
         kind: GitRepository
-        name: lp-helm-charts
+        name: helm-charts
         namespace: flux-system
   interval: 1m
   values:
@@ -27,8 +27,7 @@ spec:
               - targets:
                   - <alertmanager endpoint url here>
     grafana:
-      enabled: true
-      <additional grafana settings here>
+      enabled: false
     coreDns:
       enabled: false
     defaultRules:

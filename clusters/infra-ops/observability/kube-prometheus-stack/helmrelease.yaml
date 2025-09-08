@@ -10,7 +10,7 @@ spec:
       version: 73.2.0
       sourceRef:
         kind: GitRepository
-        name: lp-helm-charts
+        name: helm-charts
         namespace: flux-system
   interval: 1m
   values:

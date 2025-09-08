@@ -1,0 +1,28 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: external-secrets
+  namespace: external-secrets
+spec:
+  interval: 10m
+  releaseName: external-secrets
+  chart:
+    spec:
+      chart: external-secrets
+      version: "0.9.1"
+      sourceRef:
+        kind: HelmRepository
+        name: external-secrets
+        namespace: flux-system
+  install:
+    createNamespace: true
+  upgrade:
+    remediation:
+      remediateLastFailure: true
+  values:
+    replicaCount: 2  
+    leaderElect: true
+    metrics:
+      enabled: true 
+    webhook:
+      enabled: true

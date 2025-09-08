@@ -1,1 +1,1 @@
-This folder contains kind: kustomization resources that define what flux will deploy where, and in what order.
+These folders define what is deployed onto the kubernetes clusters involved in this project
