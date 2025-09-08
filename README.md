@@ -54,6 +54,8 @@ A scheduled Spark job (running via the Spark Operator in the analytics cluster) 
 
 We then expose the Silver layer to BigQuery BigLake, enabling analysts and quants to query the data directly in S3 using SQL. 
 
+<img width="3840" height="216" alt="analytics-flow" src="https://github.com/user-attachments/assets/02b89abf-e66d-49f5-92a4-707ce547aed1" />
+
 see [analytics](https://github.com/schniebel/odds-update/tree/main/analytics) folder for spark operator and pyspark source code.
 
 ## Observability
