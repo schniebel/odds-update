@@ -18,34 +18,47 @@ Any cloud resources (kafka clusters, eks clusters, VPCs, redis, postgress instan
 
 ## Odds Update Flow
 
-<img width="3840" height="891" alt="odds-update-flow" src="https://github.com/user-attachments/assets/6225b758-49c6-44a3-9dc2-68f165f9413c" />
+<img width="3840" height="813" alt="odds-update-flow _ Mermaid Chart-2025-09-08-162531" src="https://github.com/user-attachments/assets/38569eeb-48bf-4c9c-ae52-065dc4504c57" />
 
-### Vendor Feed → Ingestion Adapter
-A third-party sports data provider sends a real-time event, either via HTTP push, WebSocket, Kafka, or Pub/Sub.
-The ingestion adapter (running in the ingestion cluster) receives the event, validates it, and normalizes it into the platform’s canonical schema.
+### Vendor Kafka → Core Kafka (via PrivateLink + MSK Connect)
+The third-party sports data provider hosts their own Kafka cluster in a separate AWS account.
+We consume their topics privately through AWS PrivateLink. On our side, an MSK Connect (MirrorSourceConnector) replicator reads from the vendor’s vendor.raw.events.{league} topics and writes into our Core MSK cluster as raw.events.{league}.
 
-### Adapter → Core Kafka (raw.events.*)
-The adapter produces the normalized message into the Core Kafka cluster under the appropriate raw.events.{league} topic.
-These topics serve as the authoritative staging area for all incoming events.
+Authentication: Replication uses SASL/SCRAM or mTLS, with vendor-provided per-topic ACLs.
+
+Normalization: Lightweight Single Message Transforms (SMTs) enforce canonical keying (game_id) and inject required headers (league, game_id, event_id, model_version).
+
+Schema enforcement: All records flow through AWS Glue Schema Registry, which enforces BACKWARD or FULL compatibility on raw.events.*.
+
+Dead-letter queue (DLQ): Malformed or deserialization failures are routed into a raw.events.dlq topic to prevent backpressure.
+
+These raw.events.* topics in Core Kafka serve as the authoritative staging area for all incoming events.
 
 ### Core Kafka (raw.events.*) → Odds Compute
-Odds compute services (in the compute cluster) consume the raw events.
-Each service enriches the event using Postgres (reference/config data) and Redis (cached lookups or hot state).
+Odds compute services (in the compute cluster) consume from raw.events.*. Each service enriches the events using Postgres (reference/config data) and Redis (cached lookups or hot state), then computes the odds update.
+
+### Odds Compute → Core Kafka (odds.updates.internal.*)
+The odds processor publishes computed odds updates into internal Core Kafka topics (odds.updates.internal.{league}).
+Each message includes metadata headers such as league, game_id, player_id, and model_version.
 
 ### Odds Compute → Core Kafka (odds.updates.internal.*)
 The odds processor publishes the computed odds update to an internal Core Kafka topic (odds.updates.internal.{league}).
 Each message includes metadata headers like league, game_id, player_id, and model_version.
 
-### Internal Topic → Analytics Consumers
-Analytics sinks subscribe to odds.updates.internal.* and stream results into ClickHouse (for real-time queries) and S3/Parquet (for long-term analysis by quants).
+### Internal Topics → Analytics Consumers
+Analytics sinks subscribe to odds.updates.internal.* and stream results into ClickHouse (for real-time queries) and S3/Parquet (for long-term analysis). A scheduled Spark job compacts and normalizes these datasets for analysts and quants.
 
 ### Internal Topic → Replication Hop → Edge Kafka
-A replication process (MirrorMaker 2 or Confluent Replicator) continuously reads the internal odds topics from Core and writes them to Edge Kafka, renaming them as odds.updates.public.*.
-This hop enforces schema compatibility and sanitizes any internal-only fields.
+A replication process (MirrorMaker 2) continuously reads from odds.updates.internal.* and writes into Edge Kafka as odds.updates.public.*.
+
+Sanitization: Internal-only fields are stripped.
+
+Schema enforcement: Public schemas are validated against the registry to ensure compatibility.
+
+DLQ: Any records that fail sanitization or schema validation are routed to odds.updates.public.dlq.
 
 ### Edge Kafka → External Consumers
-External consumers in multiple accounts or clouds subscribe to the odds.updates.public.* topics on Edge Kafka using private networking.
-This allows partners to reliably consume real-time odds updates without touching the private Core.
+External partners subscribe to the odds.updates.public.* topics on Edge Kafka over private networking (PrivateLink or VPC peering). This lets partners consume real-time odds updates reliably without touching Core.
 
 ## Analytics
 All odds updates from Core Kafka (odds.updates.internal.*) are written to S3 using a Kafka Connect S3 Sink, creating a Bronze layer of partitioned Parquet files (organized by league and date). 
