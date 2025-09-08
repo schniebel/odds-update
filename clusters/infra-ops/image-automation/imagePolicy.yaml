@@ -1,0 +1,27 @@
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImagePolicy
+metadata:
+  name: silver-curation-test
+  namespace: flux-system
+spec:
+  imageRepositoryRef:
+    name: silver-curation
+  policy:
+    numerical:
+      order: asc
+  filterTags:
+    pattern: '^\d+$'
+
+---
+
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImagePolicy
+metadata:
+  name: silver-curation-prod
+  namespace: flux-system
+spec:
+  imageRepositoryRef:
+    name: sparkApp
+  policy:
+    semver:
+      range: '>=0.1.0'
