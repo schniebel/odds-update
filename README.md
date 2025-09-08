@@ -54,7 +54,7 @@ A scheduled Spark job (running via the Spark Operator in the analytics cluster) 
 
 We then expose the Silver layer to BigQuery BigLake, enabling analysts and quants to query the data directly in S3 using SQL. 
 
-see [analytics](https://github.com/schniebel/odds-update/tree/main/analytics) folder for more info and pyspark source code.
+see [analytics](https://github.com/schniebel/odds-update/tree/main/analytics) folder for spark operator and pyspark source code.
 
 ## Observability
 We run a central [Grafana](https://grafana.com/) in the `infra-ops` cluster. All clusters (including `infra-ops`) run [Prometheus](https://prometheus.io/) for metrics and [Loki](https://grafana.com/oss/loki/) for logs. Managed Kafka (Core MSK and Edge MSK) is monitored via CloudWatch, with vendor specific dashboards as needed. Central Grafana wires it all together as datasources.
