@@ -70,7 +70,7 @@ We then expose the Silver layer to BigQuery BigLake, enabling analysts and quant
 
 <img width="3840" height="216" alt="analytics-flow" src="https://github.com/user-attachments/assets/02b89abf-e66d-49f5-92a4-707ce547aed1" />
 
-see [analytics](https://github.com/schniebel/odds-update/tree/main/analytics) folder for spark operator and pyspark source code.
+see [analytics](https://github.com/schniebel/odds-update/tree/main/silver-curation) folder for spark operator and pyspark source code.
 
 ## Observability
 We run a central [Grafana](https://grafana.com/) in the `infra-ops` cluster. All clusters (including `infra-ops`) run [Prometheus](https://prometheus.io/) for metrics and [Loki](https://grafana.com/oss/loki/) for logs. Managed Kafka (Core MSK and Edge MSK) is monitored via CloudWatch, with vendor specific dashboards as needed. Central Grafana wires it all together as datasources.

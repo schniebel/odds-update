@@ -1,7 +1,7 @@
 apiVersion: iam.aws.crossplane.io/v1beta1
 kind: Role
 metadata:
-  name: msk-connect-core-edge-role-test
+  name: msk-connect-core-edge-role-prod
 spec:
   forProvider:
     assumeRolePolicyDocument: |
@@ -19,10 +19,10 @@ spec:
 apiVersion: iam.aws.crossplane.io/v1beta1
 kind: Policy
 metadata:
-  name: msk-connect-core-edge-policy-test
+  name: msk-connect-core-edge-policy-prod
 spec:
   forProvider:
-    name: msk-connect-core-edge-policy-test
+    name: msk-connect-core-edge-policy-prod
     document: |
       {
         "Version":"2012-10-17",
@@ -48,7 +48,7 @@ spec:
 apiVersion: iam.aws.crossplane.io/v1beta1
 kind: RolePolicyAttachment
 metadata:
-  name: msk-connect-core-edge-attach-test
+  name: msk-connect-core-edge-attach-prod
 spec:
   forProvider:
     roleNameRef:

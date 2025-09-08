@@ -1,7 +1,7 @@
 apiVersion: ec2.aws.crossplane.io/v1beta1
 kind: SecurityGroup
 metadata:
-  name: pl-vendor-kafka-endpoint-sg-test
+  name: pl-vendor-kafka-endpoint-sg-prod
 spec:
   forProvider:
     vpcIdRef:

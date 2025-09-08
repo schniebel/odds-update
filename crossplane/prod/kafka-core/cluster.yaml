@@ -1,7 +1,7 @@
 apiVersion: kafka.aws.upbound.io/v1beta2
 kind: Cluster
 metadata:
-  name: core-test
+  name: core-prod
 spec:
   forProvider:
     region: us-east-1

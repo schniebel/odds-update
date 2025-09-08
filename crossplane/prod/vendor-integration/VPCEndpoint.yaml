@@ -2,7 +2,7 @@
 apiVersion: ec2.aws.crossplane.io/v1beta1
 kind: VPCEndpoint
 metadata:
-  name: vendor-kafka-pl-endpoint-test
+  name: vendor-kafka-pl-endpoint-prod
 spec:
   forProvider:
     vpcIdRef:

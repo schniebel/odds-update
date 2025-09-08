@@ -1,7 +1,7 @@
 apiVersion: topic.kafka.crossplane.io/v1alpha1
 kind: Topic
 metadata:
-  name: raw-events-dlq-test
+  name: raw-events-dlq-prod
 spec:
   providerConfigRef:
     name: core-kafka
@@ -17,7 +17,7 @@ spec:
 apiVersion: topic.kafka.crossplane.io/v1alpha1
 kind: Topic
 metadata:
-  name: odds-updates-public-dlq-test 
+  name: odds-updates-public-dlq-prod 
 spec:
   providerConfigRef:
     name: core-kafka

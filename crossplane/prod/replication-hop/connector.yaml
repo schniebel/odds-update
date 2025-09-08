@@ -1,12 +1,12 @@
 apiVersion: kafkaconnect.aws.crossplane.io/v1alpha1
 kind: Connector
 metadata:
-  name: core-to-edge-mirror-test
+  name: core-to-edge-mirror-prod
 spec:
   forProvider:
-    connectorName: core-to-edge-mirror-test
+    connectorName: core-to-edge-mirror-prod
     serviceExecutionRoleArnRef:
-      name: msk-connect-core-edge-role-test
+      name: msk-connect-core-edge-role-prod
     capacity:
       provisionedCapacity:
         mcuCount: 1

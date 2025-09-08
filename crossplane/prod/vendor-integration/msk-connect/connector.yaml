@@ -2,12 +2,12 @@
 apiVersion: kafkaconnect.aws.crossplane.io/v1alpha1
 kind: Connector
 metadata:
-  name: vendor-to-core-mirror-test
+  name: vendor-to-core-mirror-prod
 spec:
   forProvider:
-    connectorName: vendor-to-core-mirror-test
+    connectorName: vendor-to-core-mirror-prod
     serviceExecutionRoleArnRef:
-      name: msk-connect-role-test
+      name: msk-connect-role-prod
     capacity:
       provisionedCapacity:
         mcuCount: 1
@@ -17,11 +17,11 @@ spec:
         bootstrapServers: b-1.core-msk.<<<your-domain>>>:9094,b-2.core-msk.<<<your-domain>>>:9094
         vpc:
           subnets:
-            - fromFieldPath: metadata.name=odds-update-private-a-test
-            - fromFieldPath: metadata.name=odds-update-private-b-test
-            - fromFieldPath: metadata.name=odds-update-private-c-test
+            - fromFieldPath: metadata.name=odds-update-private-a-prod
+            - fromFieldPath: metadata.name=odds-update-private-b-prod
+            - fromFieldPath: metadata.name=odds-update-private-c-prod
           securityGroups:
-            - fromFieldPath: metadata.name=pl-vendor-kafka-endpoint-sg-test
+            - fromFieldPath: metadata.name=pl-vendor-kafka-endpoint-sg-prod
     connectorConfiguration:
       "name": "vendor-to-core-mirror"
       "connector.class": "org.apache.kafka.connect.mirror.MirrorSourceConnector"
