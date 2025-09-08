@@ -1,0 +1,16 @@
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: infra-ops-observability
+  namespace: flux-system
+spec:
+  dependsOn:
+    - name: infra-ops-namespaces
+  interval: 10m0s
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  path: ./infra-ops/observability
+  prune: true
+  wait: true
+  timeout: 5m0s
