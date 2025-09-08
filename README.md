@@ -42,6 +42,9 @@ Odds compute services (in the compute cluster) consume from raw.events.*. Each s
 The odds processor publishes computed odds updates into internal Core Kafka topics (odds.updates.internal.{league}).
 Each message includes metadata headers such as league, game_id, player_id, and model_version.
 
+Postgres (RDS): odds-compute services query reference/configuration data (e.g., team rosters, game metadata) during enrichment.
+Redis (ElastiCache): odds-compute services cache hot state and provide fast lookups to keep per-event latency low (<5s P99 as required).
+
 ### Odds Compute → Core Kafka (odds.updates.internal.*)
 The odds processor publishes the computed odds update to an internal Core Kafka topic (odds.updates.internal.{league}).
 Each message includes metadata headers like league, game_id, player_id, and model_version.
