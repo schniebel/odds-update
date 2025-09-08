@@ -1,3 +1,5 @@
+This folder contains all the crossplane resources, which provision cloud resources used in this excercise.
+
 ### composition 
 
 [crossplane pipeline compostion](https://docs.crossplane.io/latest/composition/compositions/) definitions (groups resources together in a logical pipeline)
