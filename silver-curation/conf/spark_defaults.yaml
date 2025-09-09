@@ -1,4 +1,3 @@
-# Default Spark & pipeline options. CLI args override these.
 paths:
   bronze_root: "s3://sports-lake/bronze/odds_updates"
   silver_root: "s3://sports-lake/silver/odds_updates"
