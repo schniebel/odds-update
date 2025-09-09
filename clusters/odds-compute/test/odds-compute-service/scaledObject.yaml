@@ -1,0 +1,34 @@
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: odds-compute
+  namespace: apps
+spec:
+  scaleTargetRef:
+    kind: Deployment
+    name: odds-compute
+  minReplicaCount: 3
+  maxReplicaCount: 12                 # ≈ partitions for your group
+  cooldownPeriod: 120                 # seconds to scale down
+  pollingInterval: 15                 # seconds between checks
+  triggers:
+    # A) Kafka lag (MSK over SASL_SSL)
+    - type: kafka
+      metadata:
+        bootstrapServers: "b-1.core-msk:9094,b-2.core-msk:9094,b-3.core-msk:9094"
+        consumerGroup: "odds-compute"
+        # Single topic or regex across leagues
+        topic: "raw.events.*"
+        allowRegex: "true"
+        lagThreshold: "1000"          # scale out if group lag > 1000
+        offsetResetPolicy: "latest"
+        # Auth & TLS
+        tls: "enable"
+        sasl: "scram_sha512"
+      authenticationRef:
+        name: kafka-scram-auth
+    # B) CPU as a secondary trigger (OR semantics with Kafka)
+    - type: cpu
+      metadata:
+        type: Utilization
+        value: "70"
