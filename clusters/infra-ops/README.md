@@ -1,6 +1,6 @@
 ### GitOps control plane
 
-The infra-ops EKS cluster runs Flux and Crossplane and acts as the control plane for all environments. Flux watches this repo and reconciles resources in a strict order using Kustomization.dependsOn.
+The infra-ops EKS cluster runs Flux and Crossplane and acts as the control plane for all environments. Flux watches this repo and reconciles resources in a strict order using `Kustomization.dependsOn`.
 
 Order of operations: Namespaces → External Secrets Operator → Secrets → Crossplane install → Crossplane providers/compositions/managed resources → Observability. Once Crossplane provisions cloud infra (including EKS clusters), Flux uses per-cluster kubeConfig secrets to push workloads (e.g., odds-compute and analytics) into those target clusters.
 
