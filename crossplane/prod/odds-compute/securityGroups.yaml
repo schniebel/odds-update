@@ -1,0 +1,49 @@
+apiVersion: ec2.aws.crossplane.io/v1beta1
+kind: SecurityGroup
+metadata:
+  name: odds-db-sg
+spec:
+  forProvider:
+    vpcIdRef:
+      name: odds-update-vpc
+    groupName: odds-db-sg
+    description: Allow Postgres from EKS nodes/pods
+    ingress:
+      - fromPort: 5432
+        toPort: 5432
+        ipProtocol: tcp
+        userIdGroupPairs:
+          - groupIdRef:
+              name: clients-sg   # <- your EKS nodes/NG SG (or a dedicated app SG)
+    egress:
+      - fromPort: 0
+        toPort: 0
+        ipProtocol: -1
+  providerConfigRef:
+    name: aws-default
+
+---
+
+apiVersion: ec2.aws.crossplane.io/v1beta1
+kind: SecurityGroup
+metadata:
+  name: odds-redis-sg
+spec:
+  forProvider:
+    vpcIdRef:
+      name: odds-update-vpc
+    groupName: odds-redis-sg
+    description: Allow Redis from EKS nodes/pods
+    ingress:
+      - fromPort: 6379
+        toPort: 6379
+        ipProtocol: tcp
+        userIdGroupPairs:
+          - groupIdRef:
+              name: clients-sg   # <- your EKS nodes/NG SG (or a dedicated app SG)
+    egress:
+      - fromPort: 0
+        toPort: 0
+        ipProtocol: -1
+  providerConfigRef:
+    name: aws-default
