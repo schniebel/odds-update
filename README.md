@@ -1,8 +1,3 @@
-Postgres (RDS): odds-compute services query reference/configuration data (e.g., team rosters, game metadata) during enrichment.
-
-Redis (ElastiCache): odds-compute services cache hot state and provide fast lookups to keep per-event latency low (<5s P99 as required).# odds-update
-For Sr. Infrastructure Engineer take home exercise
-
 ## Bootstrapping System
 To bootstrap entire system, run `bootstrap.sh`, which will do the following:
 - run `main.tf`, which creates the `infra-ops` eks cluster
@@ -25,7 +20,7 @@ Any cloud resources (kafka clusters, eks clusters, VPCs, redis, postgress instan
 
 ### Vendor Kafka → Core Kafka (via PrivateLink + MSK Connect)
 The third-party sports data provider hosts their own Kafka cluster in a separate AWS account.
-We consume their topics privately through AWS PrivateLink. On our side, an MSK Connect (MirrorSourceConnector) replicator reads from the vendor’s vendor.raw.events.{league} topics and writes into our Core MSK cluster as raw.events.{league}.
+We consume their topics privately through AWS PrivateLink. On our side, an MSK Connect (MirrorSourceConnector) replicator reads from the vendor’s vendor.raw.events.{league} topics and writes into our Core MSK cluster as `raw.events.{league}`.
 
 Authentication: Replication uses SASL/SCRAM or mTLS, with vendor-provided per-topic ACLs.
 
@@ -33,29 +28,29 @@ Normalization: Lightweight Single Message Transforms (SMTs) enforce canonical ke
 
 Schema enforcement: All records flow through AWS Glue Schema Registry, which enforces BACKWARD or FULL compatibility on raw.events.*.
 
-Dead-letter queue (DLQ): Malformed or deserialization failures are routed into a raw.events.dlq topic to prevent backpressure.
+Dead-letter queue (DLQ): Malformed or deserialization failures are routed into a `raw.events.dlq` topic to prevent backpressure.
 
-These raw.events.* topics in Core Kafka serve as the authoritative staging area for all incoming events.
+These `raw.events.*` topics in Core Kafka serve as the authoritative staging area for all incoming events.
 
-### Core Kafka (raw.events.*) → Odds Compute
-Odds compute services (in the compute cluster) consume from raw.events.*. Each service enriches the events using Postgres (reference/config data) and Redis (cached lookups or hot state), then computes the odds update.
-
-### Odds Compute → Core Kafka (odds.updates.internal.*)
-The odds processor publishes computed odds updates into internal Core Kafka topics (odds.updates.internal.{league}).
-Each message includes metadata headers such as league, game_id, player_id, and model_version.
+### Core Kafka (`raw.events.*`) → Odds Compute
+Odds compute services (in the compute cluster) consume from `raw.events.*`. Each service enriches the events using Postgres (reference/config data) and Redis (cached lookups or hot state), then computes the odds update.
 
 Postgres (RDS): odds-compute services query reference/configuration data (e.g., team rosters, game metadata) during enrichment.
 Redis (ElastiCache): odds-compute services cache hot state and provide fast lookups to keep per-event latency low (<5s P99 as required).
 
 ### Odds Compute → Core Kafka (odds.updates.internal.*)
-The odds processor publishes the computed odds update to an internal Core Kafka topic (odds.updates.internal.{league}).
+The odds processor publishes computed odds updates into internal Core Kafka topics (odds.updates.internal.{league}).
+Each message includes metadata headers such as league, game_id, player_id, and model_version.
+
+### Odds Compute → Core Kafka (odds.updates.internal.*)
+The odds processor publishes the computed odds update to an internal Core Kafka topic (`odds.updates.internal.{league}`).
 Each message includes metadata headers like league, game_id, player_id, and model_version.
 
 ### Internal Topics → Analytics Consumers
-Analytics sinks subscribe to odds.updates.internal.* and stream results into ClickHouse (for real-time queries) and S3/Parquet (for long-term analysis). A scheduled Spark job compacts and normalizes these datasets for analysts and quants.
+Analytics sinks subscribe to `odds.updates.internal.*` and stream results into S3/Parquet. A scheduled Spark job compacts and normalizes these datasets for analysts and quants.
 
 ### Internal Topic → Replication Hop → Edge Kafka
-A replication process (MirrorMaker 2) continuously reads from odds.updates.internal.* and writes into Edge Kafka as odds.updates.public.*.
+A replication process (MirrorMaker 2) continuously reads from `odds.updates.internal.*` and writes into Edge Kafka as `odds.updates.public.*`.
 
 Sanitization: Internal-only fields are stripped.
 
@@ -64,10 +59,10 @@ Schema enforcement: Public schemas are validated against the registry to ensure 
 DLQ: Any records that fail sanitization or schema validation are routed to odds.updates.public.dlq.
 
 ### Edge Kafka → External Consumers
-External partners subscribe to the odds.updates.public.* topics on Edge Kafka over private networking (PrivateLink or VPC peering). This lets partners consume real-time odds updates reliably without touching Core.
+External partners subscribe to the `odds.updates.public.*` topics on Edge Kafka over private networking (PrivateLink or VPC peering). This lets partners consume real-time odds updates reliably without touching Core.
 
 ## Analytics
-All odds updates from Core Kafka (odds.updates.internal.*) are written to S3 using a Kafka Connect S3 Sink, creating a Bronze layer of partitioned Parquet files (organized by league and date). 
+All odds updates from Core Kafka (`odds.updates.internal.*`) are written to S3 using a Kafka Connect S3 Sink, creating a Bronze layer of partitioned Parquet files (organized by league and date). 
 
 A scheduled Spark job (running via the Spark Operator in the analytics cluster) processes the Bronze data into a Silver layer. In this step, records are deduplicated, schemas normalized, and small files compacted into query-efficient Parquet.
 
@@ -92,3 +87,22 @@ Once the tagged image makes to to ECR, flux will pull in the latest images based
 
 ### Tagging strategy
 If an images is meant to be deployed to test, it will be tagged with a unix timestamp. if prod, a semver tag is used. Having this different tagging strategy allows us to have test and prod images pushed to the same ECR repo, because flux is configured to only care about one of those tagging strategies depending on if its for test or prod.
+
+## Why EKS for Kubernetes Distribution?
+Integrates well with all the IAM roles and permissions needed for the stack. Since its a managed k8 distribution, we dont have to worry about the Control Plane, as well as out of the box integrations with existing EBS, PVC classes with AWS.
+
+### Machine type used for EKS clusters
+m6i.xlarge = 4 vCPU / 16 GiB RAM, strong general-purpose baseline, great for mixed CPU/memory workloads.
+
+Why it fits:
+Odds Compute (stateless services): CPU-heavy enrichment + network I/O to Kafka/Redis/Postgres; 16 GiB gives headroom for serialization buffers and caches; 4 vCPU maps well to multiple consumer threads per pod.
+
+Analytics (Spark): Executors sized around 1–2 vCPU / 4–8 GiB each fit neatly on these nodes for parallelism without fragmentation.
+
+### Nodes
+Nodes are set as a min of 3 for HA accross availability zones.
+
+### odds-compute service Pod Autoscaling
+
+uses [KEDA autosclaler](https://keda.sh/). if we use this there are No Prometheus Adapter rules to maintain. it scales on real lag from Kafka (with TLS/SCRAM, regex topics, per-group) out of the box. its looking more directly at what we are scaling for (consumer lag) instead of trying to infer that from CPU.
+
