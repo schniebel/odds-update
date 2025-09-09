@@ -1,10 +1,11 @@
+
 apiVersion: topic.kafka.crossplane.io/v1alpha1
 kind: Topic
 metadata:
-  name: odds-updates-public-nfl-test
+  name: odds-updates-public-nfl-prod
 spec:
   providerConfigRef:
-    name: edge-kafka
+    name: edge-kafka-prod
   partitions: 12
   replicationFactor: 3
   config:
@@ -16,10 +17,10 @@ spec:
 apiVersion: topic.kafka.crossplane.io/v1alpha1
 kind: Topic
 metadata:
-  name: odds-updates-public-nba-test
+  name: odds-updates-public-nba-prod
 spec:
   providerConfigRef:
-    name: edge-kafka
+    name: edge-kafka-prod
   partitions: 12
   replicationFactor: 3
   config:
@@ -31,10 +32,10 @@ spec:
 apiVersion: topic.kafka.crossplane.io/v1alpha1
 kind: Topic
 metadata:
-  name: odds-updates-public-mlb-test
+  name: odds-updates-public-mlb-prod
 spec:
   providerConfigRef:
-    name: edge-kafka-test
+    name: edge-kafka-prod
   partitions: 12
   replicationFactor: 3
   config:
@@ -47,10 +48,10 @@ spec:
 apiVersion: topic.kafka.crossplane.io/v1alpha1
 kind: Topic
 metadata:
-  name: odds-updates-public-dlq-test
+  name: odds-updates-public-dlq-prod
 spec:
   providerConfigRef:
-    name: edge-kafka-test
+    name: edge-kafka-prod
   partitions: 6
   replicationFactor: 3
   config:
